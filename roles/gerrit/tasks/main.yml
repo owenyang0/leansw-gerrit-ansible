@@ -1,0 +1,52 @@
+---
+- name: install gerrit required packages
+  yum: name={{item}}
+  with_items:
+    - git
+
+- name: create gerrit User
+  user: name={{unix_user}} state=present
+
+- name: create a nice and warm home for gerrit
+  sudo: yes
+  file: path={{gerrit_home}} owner={{unix_user}} group={{unix_user}} mode=0750 state=directory
+
+- name: create gerrit etc folder
+  sudo_user: "{{ unix_user }}"
+  file: path={{gerrit_home}}/etc state=directory
+
+- name: create gerrit.conf
+  sudo_user: "{{ unix_user }}"
+  template: src=gerrit.config dest={{gerrit_home}}/etc/gerrit.config
+
+- name: fetch gerrit from googlecode
+  sudo_user: "{{ unix_user }}"
+  # get_url: url={{ gerrit_download_link }} dest={{ gerrit_home }}/gerrit.war mode=0750
+  copy: src=gerrit-2.11.4.war dest={{gerrit_home}}/gerrit.war mode=0750
+
+- name: init the gerrit
+  sudo_user: "{{ unix_user }}"
+  command: chdir={{gerrit_home}} java -jar gerrit.war init  --batch -d {{gerrit_home}}
+
+- name: reindex gerrit
+  sudo_user: "{{ unix_user }}"
+  command: chdir={{gerrit_home}} java -jar gerrit.war reindex -d {{gerrit_home}}
+
+- name: setup as service
+  sudo: yes
+  file: src={{gerrit_home}}/bin/gerrit.sh dest=/etc/init.d/gerrit state=link
+
+- name: setup gerrit home in default codereview config
+  sudo: yes
+  lineinfile: dest=/etc/default/gerritcodereview
+              create=yes
+              state=present
+              regexp="GERRIT_SITE="
+              line="GERRIT_SITE={{ gerrit_home }}"
+              owner={{ unix_user }}
+              group={{ unix_user }}
+              mode=0644
+
+- name: restart gerrit
+  sudo: yes
+  service: name=gerrit enabled=yes state=restarted
