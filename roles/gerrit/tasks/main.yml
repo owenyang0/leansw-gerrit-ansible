@@ -21,8 +21,8 @@
 
 - name: fetch gerrit from googlecode
   sudo_user: "{{ unix_user }}"
-  # get_url: url={{ gerrit_download_link }} dest={{ gerrit_home }}/gerrit.war mode=0750
-  copy: src=gerrit-2.11.4.war dest={{gerrit_home}}/gerrit.war mode=0750
+  get_url: url={{ gerrit_download_link }} dest={{ gerrit_home }}/gerrit.war mode=0750
+  # copy: src=gerrit-2.11.4.war dest={{gerrit_home}}/gerrit.war mode=0750
 
 - name: init the gerrit
   sudo_user: "{{ unix_user }}"
